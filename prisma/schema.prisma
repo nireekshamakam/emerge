@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model WatchlistStock {
+  id      String   @id @default(cuid())
+  symbol  String   @unique
+  name    String
+  addedAt DateTime @default(now())
+}
+
+model Meeting {
+  id          String     @id @default(cuid())
+  companyName String
+  address     String?
+  city        String?
+  notes       String?    @db.Text
+  meetingDate DateTime
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  attendees   Attendee[]
+}
+
+model Attendee {
+  id        String  @id @default(cuid())
+  name      String
+  role      String?
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+}
+
+model PipelineItem {
+  id          String   @id @default(cuid())
+  companyName String
+  sector      String?
+  description String?  @db.Text
+  dealSize    Float?
+  stage       String   @default("SCREENING")
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([stage])
+}
