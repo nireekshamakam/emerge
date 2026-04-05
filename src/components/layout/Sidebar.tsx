@@ -7,6 +7,8 @@ import {
   Newspaper,
   TrendingUp,
   BarChart3,
+  Rocket,
+  CalendarDays,
   Users,
   Kanban,
   ChevronLeft,
@@ -20,6 +22,8 @@ const navItems = [
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/markets", label: "Markets", icon: TrendingUp },
   { href: "/stocks", label: "Stocks", icon: BarChart3 },
+  { href: "/ipo", label: "IPOs", icon: Rocket },
+  { href: "/earnings", label: "Earnings", icon: CalendarDays },
   { href: "/meetings", label: "Meetings", icon: Users },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
 ];

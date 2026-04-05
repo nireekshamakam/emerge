@@ -7,6 +7,7 @@ export interface NewsItem {
   source: string;
   publishedAt: string;
   description: string;
+  stockName?: string;
 }
 
 const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
@@ -19,7 +20,7 @@ interface RssItem {
   source?: string | { "#text"?: string };
 }
 
-function parseRss(xml: string, sourceName: string): NewsItem[] {
+export function parseRss(xml: string, sourceName: string): NewsItem[] {
   try {
     const parsed = parser.parse(xml);
     const channel = parsed?.rss?.channel;
@@ -62,8 +63,45 @@ export async function fetchNews(region: "global" | "india"): Promise<NewsItem[]>
   );
 
   const allNews = results
-    .filter((r): r is PromiseFulfilledResult<NewsItem[]> => r.status === "fulfilled")
-    .flatMap((r) => r.value)
+    .filter((r) => r.status === "fulfilled")
+    .flatMap((r) => (r as PromiseFulfilledResult<NewsItem[]>).value)
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+  cache.set(cacheKey, { data: allNews, timestamp: Date.now() });
+  return allNews;
+}
+
+export async function fetchPortfolioNews(
+  stocks: { symbol: string; name: string }[]
+): Promise<NewsItem[]> {
+  const cacheKey = "portfolio";
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  // Limit to 10 stocks to avoid too many requests
+  const limitedStocks = stocks.slice(0, 10);
+
+  const results = await Promise.allSettled(
+    limitedStocks.map(async (stock) => {
+      // Clean company name: remove .NS/.BO suffix and common suffixes
+      const cleanName = stock.name.replace(/\s*(Ltd\.?|Limited|Inc\.?|Corp\.?)$/i, "").trim();
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cleanName + " stock")}&hl=en-IN&gl=IN&ceid=IN:en`;
+
+      const res = await fetch(rssUrl, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+        signal: AbortSignal.timeout(10000),
+      });
+      const xml = await res.text();
+      const items = parseRss(xml, "Google News");
+      return items.slice(0, 5).map((item) => ({ ...item, stockName: stock.name }));
+    })
+  );
+
+  const allNews = results
+    .filter((r) => r.status === "fulfilled")
+    .flatMap((r) => (r as PromiseFulfilledResult<NewsItem[]>).value)
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
   cache.set(cacheKey, { data: allNews, timestamp: Date.now() });

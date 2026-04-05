@@ -1,4 +1,6 @@
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
+
+const yf = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 export interface StockMetrics {
   symbol: string;
@@ -26,41 +28,38 @@ function computeCAGR(startValue: number, endValue: number, years: number): numbe
 
 export async function fetchStockMetrics(symbol: string): Promise<StockMetrics> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const yf = yahooFinance as any;
-    const rawQuote = await yf.quote(symbol) as Record<string, unknown>;
-    let rawSummary: Record<string, Record<string, unknown>> | null = null;
+    const quote = await yf.quote(symbol);
+    let summary: Record<string, unknown> | null = null;
     try {
-      rawSummary = await yf.quoteSummary(symbol, {
+      summary = await yf.quoteSummary(symbol, {
         modules: ["defaultKeyStatistics", "financialData", "incomeStatementHistory", "balanceSheetHistory"],
-      }) as Record<string, Record<string, unknown>>;
+      }) as Record<string, unknown>;
     } catch {
-      rawSummary = null;
+      summary = null;
     }
 
-    const financialData = rawSummary?.financialData as Record<string, number | undefined> | undefined;
-    const keyStats = rawSummary?.defaultKeyStatistics as Record<string, number | undefined> | undefined;
-    const incomeHistoryContainer = rawSummary?.incomeStatementHistory as Record<string, unknown[]> | undefined;
+    const financialData = (summary?.financialData ?? {}) as Record<string, number | undefined>;
+    const keyStats = (summary?.defaultKeyStatistics ?? {}) as Record<string, number | undefined>;
+    const incomeHistoryContainer = summary?.incomeStatementHistory as Record<string, unknown[]> | undefined;
     const incomeHistory = (incomeHistoryContainer?.incomeStatementHistory || []) as Record<string, number | undefined>[];
-    const balanceHistoryContainer = rawSummary?.balanceSheetHistory as Record<string, unknown[]> | undefined;
+    const balanceHistoryContainer = summary?.balanceSheetHistory as Record<string, unknown[]> | undefined;
     const balanceHistory = (balanceHistoryContainer?.balanceSheetHistory || []) as Record<string, number | undefined>[];
 
     // ROE
-    const roe = financialData?.returnOnEquity != null
+    const roe = financialData.returnOnEquity != null
       ? (financialData.returnOnEquity as number) * 100
       : null;
 
     // ROCE = EBIT / (Total Assets - Current Liabilities)
     let roce: number | null = null;
-    if (financialData?.ebitda != null && balanceHistory.length > 0) {
+    if (financialData.ebitda != null && balanceHistory.length > 0) {
       const latest = balanceHistory[0];
       const totalAssets = latest.totalAssets;
       const currentLiabilities = latest.totalCurrentLiabilities;
       if (totalAssets && currentLiabilities) {
         const capitalEmployed = totalAssets - currentLiabilities;
         if (capitalEmployed > 0) {
-          const ebit = financialData.ebitda as number;
-          roce = (ebit / capitalEmployed) * 100;
+          roce = ((financialData.ebitda as number) / capitalEmployed) * 100;
         }
       }
     }
@@ -87,28 +86,21 @@ export async function fetchStockMetrics(symbol: string): Promise<StockMetrics> {
 
     return {
       symbol,
-      name: (rawQuote.shortName as string) || (rawQuote.longName as string) || symbol,
-      price: (rawQuote.regularMarketPrice as number) ?? null,
-      pe: (rawQuote.trailingPE as number) ?? keyStats?.trailingPE ?? null,
-      pb: keyStats?.priceToBook ?? null,
+      name: quote.shortName || quote.longName || symbol,
+      price: quote.regularMarketPrice ?? null,
+      pe: quote.trailingPE ?? keyStats.trailingPE ?? null,
+      pb: keyStats.priceToBook ?? null,
       roe,
       roce,
-      eps: (rawQuote.epsTrailingTwelveMonths as number) ?? null,
+      eps: quote.epsTrailingTwelveMonths ?? null,
       revenueGrowth3yr,
       patGrowth3yr,
     };
   } catch {
     return {
-      symbol,
-      name: symbol,
-      price: null,
-      pe: null,
-      pb: null,
-      roe: null,
-      roce: null,
-      eps: null,
-      revenueGrowth3yr: null,
-      patGrowth3yr: null,
+      symbol, name: symbol,
+      price: null, pe: null, pb: null, roe: null,
+      roce: null, eps: null, revenueGrowth3yr: null, patGrowth3yr: null,
     };
   }
 }
@@ -116,21 +108,21 @@ export async function fetchStockMetrics(symbol: string): Promise<StockMetrics> {
 export async function searchStocks(query: string): Promise<SearchResult[]> {
   if (!query || query.length < 2) return [];
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const results = await (yahooFinance as any).search(query) as Record<string, unknown>;
-    const quotes = (results.quotes || []) as Record<string, string>[];
-    return quotes
-      .filter((q) => {
-        const s = q.symbol || "";
+    const results = await yf.search(query);
+    return (results.quotes || [])
+      .filter((q: Record<string, unknown>) => {
+        const s = String(q.symbol || "");
         return s.endsWith(".NS") || s.endsWith(".BO");
       })
       .slice(0, 10)
-      .map((q) => ({
-        symbol: q.symbol || "",
-        name: q.shortname || q.longname || q.symbol || "",
-        exchange: q.exchange || "",
+      .map((q: Record<string, unknown>) => ({
+        symbol: String(q.symbol || ""),
+        name: String(q.shortname || q.longname || q.symbol || ""),
+        exchange: String(q.exchange || ""),
       }));
   } catch {
     return [];
   }
 }
+
+export { yf };

@@ -1,5 +1,7 @@
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
 import { MARKET_INDICES, COMMODITIES, BONDS_AND_RATES, CURRENCIES } from "@/lib/constants";
+
+const yf = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 export interface MarketQuote {
   symbol: string;
@@ -13,7 +15,7 @@ export interface MarketQuote {
 }
 
 const cache: { data: MarketData | null; timestamp: number } = { data: null, timestamp: 0 };
-const CACHE_TTL = 60 * 1000; // 60 seconds
+const CACHE_TTL = 60 * 1000;
 
 export interface MarketData {
   indices: MarketQuote[];
@@ -28,12 +30,11 @@ async function fetchQuote(symbol: string): Promise<{
   regularMarketChangePercent?: number;
 } | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const quote = await (yahooFinance as any).quote(symbol) as Record<string, unknown>;
+    const quote = await yf.quote(symbol);
     return {
-      regularMarketPrice: quote.regularMarketPrice as number | undefined,
-      regularMarketChange: quote.regularMarketChange as number | undefined,
-      regularMarketChangePercent: quote.regularMarketChangePercent as number | undefined,
+      regularMarketPrice: quote.regularMarketPrice,
+      regularMarketChange: quote.regularMarketChange,
+      regularMarketChangePercent: quote.regularMarketChangePercent,
     };
   } catch {
     return null;

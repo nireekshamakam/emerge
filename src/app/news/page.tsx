@@ -4,8 +4,10 @@ import { Header } from "@/components/layout/Header";
 import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink, Clock } from "lucide-react";
+import Link from "next/link";
 
 interface NewsItem {
   title: string;
@@ -13,6 +15,7 @@ interface NewsItem {
   source: string;
   publishedAt: string;
   description: string;
+  stockName?: string;
 }
 
 function timeAgo(dateStr: string): string {
@@ -24,6 +27,50 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function NewsCard({ item }: { item: NewsItem }) {
+  return (
+    <Card className="hover:bg-accent/30 transition-colors">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            {item.stockName && (
+              <Badge variant="outline" className="mb-1.5 text-xs">{item.stockName}</Badge>
+            )}
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium hover:text-primary transition-colors line-clamp-2 block"
+            >
+              {item.title}
+            </a>
+            {item.description && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {item.description}
+              </p>
+            )}
+            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+              <span className="font-medium text-primary/80">{item.source}</span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {timeAgo(item.publishedAt)}
+              </span>
+            </div>
+          </div>
+          <a
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function NewsPage() {
   const [tab, setTab] = useState("global");
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -32,7 +79,8 @@ export default function NewsPage() {
   const fetchNews = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/news?region=${tab}`);
+      const url = tab === "portfolio" ? "/api/news/portfolio" : `/api/news?region=${tab}`;
+      const res = await fetch(url);
       const data = await res.json();
       setNews(Array.isArray(data) ? data : []);
     } catch {
@@ -52,6 +100,7 @@ export default function NewsPage() {
           <TabsList>
             <TabsTrigger value="global">Global</TabsTrigger>
             <TabsTrigger value="india">India</TabsTrigger>
+            <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
           </TabsList>
 
           <TabsContent value={tab}>
@@ -62,46 +111,25 @@ export default function NewsPage() {
                 ))}
               </div>
             ) : news.length === 0 ? (
-              <p className="text-muted-foreground mt-8 text-center">No news available. Try again later.</p>
+              <div className="mt-8 text-center">
+                {tab === "portfolio" ? (
+                  <div>
+                    <p className="text-muted-foreground">No portfolio news available.</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      <Link href="/stocks" className="text-primary hover:underline">
+                        Add stocks to your watchlist
+                      </Link>{" "}
+                      to see company-specific news here.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No news available. Try again later.</p>
+                )}
+              </div>
             ) : (
               <div className="grid gap-4 mt-4">
                 {news.map((item, i) => (
-                  <Card key={i} className="hover:bg-accent/30 transition-colors">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <a
-                            href={item.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium hover:text-primary transition-colors line-clamp-2"
-                          >
-                            {item.title}
-                          </a>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {item.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            <span className="font-medium text-primary/80">{item.source}</span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {timeAgo(item.publishedAt)}
-                            </span>
-                          </div>
-                        </div>
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 text-muted-foreground hover:text-foreground"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <NewsCard key={i} item={item} />
                 ))}
               </div>
             )}
