@@ -17,7 +17,6 @@ import {
   ArrowRight,
   Calendar,
   RefreshCw,
-  BrainCircuit,
 } from "lucide-react";
 
 interface MarketQuote {
@@ -114,7 +113,6 @@ export default function DashboardPage() {
             <SectionLink href="/stocks" icon={<BarChart3 className="h-4 w-4" />} title="Stock Dashboard" />
             <SectionLink href="/meetings" icon={<Users className="h-4 w-4" />} title="Meetings" />
             <SectionLink href="/pipeline" icon={<Kanban className="h-4 w-4" />} title="Pipeline" />
-            <SectionLink href="/analyst" icon={<BrainCircuit className="h-4 w-4" />} title="AI Analyst" />
           </div>
           <div className="flex items-center gap-3">
             {lastRefreshed && (
