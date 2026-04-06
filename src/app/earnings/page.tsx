@@ -22,9 +22,9 @@ interface EarningsData {
 
 function DaysUntilBadge({ days }: { days: number | null }) {
   if (days == null) return <Badge variant="secondary">TBD</Badge>;
-  if (days === 0) return <Badge className="bg-amber-500/20 text-amber-400">Today</Badge>;
+  if (days === 0) return <Badge className="bg-amber-100 text-amber-700">Today</Badge>;
   if (days < 0) return <Badge variant="secondary">{Math.abs(days)}d ago</Badge>;
-  if (days <= 7) return <Badge className="bg-emerald-500/20 text-emerald-400">In {days}d</Badge>;
+  if (days <= 7) return <Badge className="bg-emerald-100 text-emerald-700">In {days}d</Badge>;
   return <Badge variant="outline">{days}d away</Badge>;
 }
 

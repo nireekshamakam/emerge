@@ -38,5 +38,5 @@ export function formatCompactNumber(value: number | null | undefined): string {
 
 export function changeColor(value: number | null | undefined): string {
   if (value == null) return "text-muted-foreground";
-  return value >= 0 ? "text-emerald-400" : "text-red-400";
+  return value >= 0 ? "text-emerald-600" : "text-red-500";
 }

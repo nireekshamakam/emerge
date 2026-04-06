@@ -31,9 +31,9 @@ interface IPOData {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    upcoming: "bg-blue-500/20 text-blue-400",
-    open: "bg-emerald-500/20 text-emerald-400",
-    listed: "bg-muted text-muted-foreground",
+    upcoming: "bg-blue-100 text-blue-700",
+    open: "bg-emerald-100 text-emerald-700",
+    listed: "bg-gray-100 text-gray-600",
   };
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[status] || ""}`}>
@@ -46,7 +46,7 @@ function GainLoss({ value }: { value: string | null }) {
   if (!value) return <span className="text-muted-foreground">—</span>;
   const isPositive = !value.startsWith("-");
   return (
-    <span className={`flex items-center gap-1 ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+    <span className={`flex items-center gap-1 ${isPositive ? "text-emerald-600" : "text-red-500"}`}>
       {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
       {value}
     </span>
@@ -200,12 +200,12 @@ export default function IPOPage() {
                           <td className="py-2.5 px-3 text-sm font-medium">{ipo.company}</td>
                           <td className="py-2.5 px-3 text-sm text-right font-mono">{ipo.priceBand || "—"}</td>
                           <td className={`py-2.5 px-3 text-sm text-right font-mono ${
-                            ipo.gmp != null ? (ipo.gmp >= 0 ? "text-emerald-400" : "text-red-400") : ""
+                            ipo.gmp != null ? (ipo.gmp >= 0 ? "text-emerald-600" : "text-red-500") : ""
                           }`}>
                             {ipo.gmp != null ? `₹${ipo.gmp}` : "—"}
                           </td>
                           <td className={`py-2.5 px-3 text-sm text-right font-mono ${
-                            ipo.gmpPercent ? (ipo.gmpPercent.startsWith("-") ? "text-red-400" : "text-emerald-400") : ""
+                            ipo.gmpPercent ? (ipo.gmpPercent.startsWith("-") ? "text-red-500" : "text-emerald-600") : ""
                           }`}>
                             {ipo.gmpPercent || "—"}
                           </td>
