@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, Clock } from "lucide-react";
+import { ExternalLink, Clock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 interface NewsItem {
@@ -25,6 +25,15 @@ function timeAgo(dateStr: string): string {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
+}
+
+function lastUpdatedLabel(ts: number | null): string {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Updated just now";
+  if (mins < 60) return `Updated ${mins}m ago`;
+  return `Updated ${Math.floor(mins / 60)}h ago`;
 }
 
 function NewsCard({ item }: { item: NewsItem }) {
@@ -74,19 +83,28 @@ function NewsCard({ item }: { item: NewsItem }) {
 export default function NewsPage() {
   const [tab, setTab] = useState("global");
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchNews = useCallback(async () => {
-    setLoading(true);
+  const fetchNews = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const url = tab === "portfolio" ? "/api/news/portfolio" : `/api/news?region=${tab}`;
       const res = await fetch(url);
       const data = await res.json();
-      setNews(Array.isArray(data) ? data : []);
+      if (data.items) {
+        setNews(Array.isArray(data.items) ? data.items : []);
+        setFetchedAt(data.fetchedAt ?? null);
+      } else {
+        setNews(Array.isArray(data) ? data : []);
+      }
     } catch {
       setNews([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [tab]);
 
@@ -97,11 +115,26 @@ export default function NewsPage() {
       <Header title="Market News" />
       <div className="p-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="global">Global</TabsTrigger>
-            <TabsTrigger value="india">India</TabsTrigger>
-            <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-3">
+            <TabsList>
+              <TabsTrigger value="global">Global</TabsTrigger>
+              <TabsTrigger value="india">India</TabsTrigger>
+              <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-3">
+              {fetchedAt && (
+                <span className="text-xs text-muted-foreground">{lastUpdatedLabel(fetchedAt)}</span>
+              )}
+              <button
+                onClick={() => fetchNews(true)}
+                disabled={refreshing}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
+          </div>
 
           <TabsContent value={tab}>
             {loading ? (

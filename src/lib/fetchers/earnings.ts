@@ -15,6 +15,7 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 export interface EarningsData {
   watchlist: EarningsEvent[];
   upcoming: EarningsEvent[];
+  fetchedAt: number;
 }
 
 export async function fetchWatchlistEarnings(): Promise<EarningsEvent[]> {
@@ -141,7 +142,7 @@ export async function fetchEarningsData(): Promise<EarningsData> {
     fetchMarketEarnings(),
   ]);
 
-  const data: EarningsData = { watchlist, upcoming };
+  const data: EarningsData = { watchlist, upcoming, fetchedAt: Date.now() };
   cache.data = data;
   cache.timestamp = Date.now();
   return data;

@@ -10,11 +10,11 @@ export async function GET() {
     });
 
     if (stocks.length === 0) {
-      return NextResponse.json([]);
+      return NextResponse.json({ items: [], fetchedAt: Date.now() });
     }
 
-    const news = await fetchPortfolioNews(stocks);
-    return NextResponse.json(news);
+    const result = await fetchPortfolioNews(stocks);
+    return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Failed to fetch portfolio news" }, { status: 500 });
   }

@@ -22,6 +22,7 @@ export interface MarketData {
   commodities: MarketQuote[];
   bonds: MarketQuote[];
   currencies: MarketQuote[];
+  fetchedAt: number;
 }
 
 async function fetchQuote(symbol: string): Promise<{
@@ -106,6 +107,7 @@ export async function fetchMarketData(): Promise<MarketData> {
     commodities: commodityQuotes,
     bonds: bondQuotes,
     currencies: currencyQuotes,
+    fetchedAt: Date.now(),
   };
 
   cache.data = data;

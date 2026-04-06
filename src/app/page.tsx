@@ -1,7 +1,7 @@
 "use client";
 
 import { Header } from "@/components/layout/Header";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,8 @@ import {
   Kanban,
   ArrowRight,
   Calendar,
+  RefreshCw,
+  BrainCircuit,
 } from "lucide-react";
 
 interface MarketQuote {
@@ -28,6 +30,7 @@ interface MarketQuote {
 
 interface MarketData {
   indices: MarketQuote[];
+  fetchedAt?: number;
 }
 
 interface PipelineItem {
@@ -40,6 +43,15 @@ interface Meeting {
   companyName: string;
   meetingDate: string;
   city: string | null;
+}
+
+function lastUpdatedLabel(ts: number | null | undefined): string {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  return `${Math.floor(mins / 60)}h ago`;
 }
 
 function SectionLink({ href, icon, title }: { href: string; icon: React.ReactNode; title: string }) {
@@ -57,9 +69,14 @@ export default function DashboardPage() {
   const [pipeline, setPipeline] = useState<PipelineItem[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<number | null>(null);
 
-  useEffect(() => {
-    Promise.allSettled([
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    await Promise.allSettled([
       fetch("/api/markets").then((r) => r.json()),
       fetch("/api/pipeline").then((r) => r.json()),
       fetch("/api/meetings").then((r) => r.json()),
@@ -67,9 +84,14 @@ export default function DashboardPage() {
       if (m.status === "fulfilled") setMarkets(m.value);
       if (p.status === "fulfilled" && Array.isArray(p.value)) setPipeline(p.value);
       if (mt.status === "fulfilled" && Array.isArray(mt.value)) setMeetings(mt.value);
-      setLoading(false);
+      setLastRefreshed(Date.now());
     });
+
+    setLoading(false);
+    setRefreshing(false);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const upcomingMeetings = meetings
     .filter((m) => new Date(m.meetingDate) >= new Date(new Date().toDateString()))
@@ -85,12 +107,28 @@ export default function DashboardPage() {
       <Header title="Dashboard" />
       <div className="p-6 space-y-6">
         {/* Quick nav */}
-        <div className="flex flex-wrap gap-6">
-          <SectionLink href="/news" icon={<Newspaper className="h-4 w-4" />} title="Market News" />
-          <SectionLink href="/markets" icon={<TrendingUp className="h-4 w-4" />} title="Markets" />
-          <SectionLink href="/stocks" icon={<BarChart3 className="h-4 w-4" />} title="Stock Dashboard" />
-          <SectionLink href="/meetings" icon={<Users className="h-4 w-4" />} title="Meetings" />
-          <SectionLink href="/pipeline" icon={<Kanban className="h-4 w-4" />} title="Pipeline" />
+        <div className="flex flex-wrap gap-6 items-center justify-between">
+          <div className="flex flex-wrap gap-6">
+            <SectionLink href="/news" icon={<Newspaper className="h-4 w-4" />} title="Market News" />
+            <SectionLink href="/markets" icon={<TrendingUp className="h-4 w-4" />} title="Markets" />
+            <SectionLink href="/stocks" icon={<BarChart3 className="h-4 w-4" />} title="Stock Dashboard" />
+            <SectionLink href="/meetings" icon={<Users className="h-4 w-4" />} title="Meetings" />
+            <SectionLink href="/pipeline" icon={<Kanban className="h-4 w-4" />} title="Pipeline" />
+            <SectionLink href="/analyst" icon={<BrainCircuit className="h-4 w-4" />} title="AI Analyst" />
+          </div>
+          <div className="flex items-center gap-3">
+            {lastRefreshed && (
+              <span className="text-xs text-muted-foreground">Updated {lastUpdatedLabel(lastRefreshed)}</span>
+            )}
+            <button
+              onClick={() => load(true)}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -104,9 +142,16 @@ export default function DashboardPage() {
             {/* Market Snapshot */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp className="h-4 w-4" />
-                  Market Snapshot
+                <CardTitle className="flex items-center justify-between text-base">
+                  <span className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Market Snapshot
+                  </span>
+                  {markets?.fetchedAt && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {lastUpdatedLabel(markets.fetchedAt)}
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>

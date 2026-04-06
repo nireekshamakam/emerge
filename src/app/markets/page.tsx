@@ -1,11 +1,11 @@
 "use client";
 
 import { Header } from "@/components/layout/Header";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber, formatPercent, changeColor } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus, DollarSign, Landmark, Flame, Gem } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Landmark, Gem, RefreshCw } from "lucide-react";
 
 interface MarketQuote {
   symbol: string;
@@ -23,6 +23,16 @@ interface MarketData {
   commodities: MarketQuote[];
   bonds: MarketQuote[];
   currencies: MarketQuote[];
+  fetchedAt?: number;
+}
+
+function lastUpdatedLabel(ts: number | null | undefined): string {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Updated just now";
+  if (mins < 60) return `Updated ${mins}m ago`;
+  return `Updated ${Math.floor(mins / 60)}h ago`;
 }
 
 function ChangeIcon({ value }: { value: number | null }) {
@@ -88,14 +98,23 @@ function MarketTable({ title, icon, quotes }: { title: string; icon: React.React
 export default function MarketsPage() {
   const [data, setData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/markets")
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const d = await fetch("/api/markets").then((r) => r.json());
+      setData(d);
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (
@@ -119,7 +138,6 @@ export default function MarketsPage() {
     );
   }
 
-  // Group indices by region
   const regions = ["Americas", "Europe", "Asia-Pacific"];
   const indexByRegion = regions.map((r) => ({
     region: r,
@@ -130,17 +148,32 @@ export default function MarketsPage() {
     <div>
       <Header title="Markets" />
       <div className="p-6 space-y-6">
-        {/* Currency ticker strip */}
-        <div className="flex flex-wrap gap-4 p-4 bg-card rounded-lg border">
-          {data.currencies.map((c) => (
-            <div key={c.symbol} className="flex items-center gap-2">
-              <span className="text-sm font-medium">{c.name}</span>
-              <span className="font-mono text-sm tabular-nums">{formatNumber(c.price, 4)}</span>
-              <span className={`font-mono text-xs tabular-nums ${changeColor(c.changePercent)}`}>
-                {formatPercent(c.changePercent)}
-              </span>
-            </div>
-          ))}
+        {/* Currency ticker + refresh */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-card rounded-xl border">
+          <div className="flex flex-wrap gap-4">
+            {data.currencies.map((c) => (
+              <div key={c.symbol} className="flex items-center gap-2">
+                <span className="text-sm font-medium">{c.name}</span>
+                <span className="font-mono text-sm tabular-nums">{formatNumber(c.price, 4)}</span>
+                <span className={`font-mono text-xs tabular-nums ${changeColor(c.changePercent)}`}>
+                  {formatPercent(c.changePercent)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {data.fetchedAt && (
+              <span className="text-xs text-muted-foreground">{lastUpdatedLabel(data.fetchedAt)}</span>
+            )}
+            <button
+              onClick={() => load(true)}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Indices by region */}

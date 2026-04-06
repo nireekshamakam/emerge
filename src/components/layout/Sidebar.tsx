@@ -13,6 +13,7 @@ import {
   Kanban,
   ChevronLeft,
   ChevronRight,
+  BrainCircuit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/earnings", label: "Earnings", icon: CalendarDays },
   { href: "/meetings", label: "Meetings", icon: Users },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
+  { href: "/analyst", label: "AI Analyst", icon: BrainCircuit },
 ];
 
 export function Sidebar() {

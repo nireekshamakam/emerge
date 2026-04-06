@@ -40,14 +40,19 @@ export function parseRss(xml: string, sourceName: string): NewsItem[] {
   }
 }
 
-const cache = new Map<string, { data: NewsItem[]; timestamp: number }>();
+const cache = new Map<string, { data: NewsItem[]; fetchedAt: number; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-export async function fetchNews(region: "global" | "india"): Promise<NewsItem[]> {
+export interface NewsResponse {
+  items: NewsItem[];
+  fetchedAt: number;
+}
+
+export async function fetchNews(region: "global" | "india"): Promise<NewsResponse> {
   const cacheKey = region;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
+    return { items: cached.data, fetchedAt: cached.fetchedAt };
   }
 
   const feeds = RSS_FEEDS[region];
@@ -67,17 +72,18 @@ export async function fetchNews(region: "global" | "india"): Promise<NewsItem[]>
     .flatMap((r) => (r as PromiseFulfilledResult<NewsItem[]>).value)
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-  cache.set(cacheKey, { data: allNews, timestamp: Date.now() });
-  return allNews;
+  const fetchedAt = Date.now();
+  cache.set(cacheKey, { data: allNews, fetchedAt, timestamp: fetchedAt });
+  return { items: allNews, fetchedAt };
 }
 
 export async function fetchPortfolioNews(
   stocks: { symbol: string; name: string }[]
-): Promise<NewsItem[]> {
+): Promise<NewsResponse> {
   const cacheKey = "portfolio";
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
+    return { items: cached.data, fetchedAt: cached.fetchedAt };
   }
 
   // Limit to 10 stocks to avoid too many requests
@@ -104,6 +110,7 @@ export async function fetchPortfolioNews(
     .flatMap((r) => (r as PromiseFulfilledResult<NewsItem[]>).value)
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-  cache.set(cacheKey, { data: allNews, timestamp: Date.now() });
-  return allNews;
+  const fetchedAt = Date.now();
+  cache.set(cacheKey, { data: allNews, fetchedAt, timestamp: fetchedAt });
+  return { items: allNews, fetchedAt };
 }

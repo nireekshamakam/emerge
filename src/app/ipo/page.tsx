@@ -1,12 +1,11 @@
 "use client";
 
 import { Header } from "@/components/layout/Header";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Rocket, TrendingUp, TrendingDown } from "lucide-react";
+import { Rocket, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 
 interface IPOItem {
   company: string;
@@ -27,6 +26,7 @@ interface IPOData {
   upcoming: IPOItem[];
   recent: IPOItem[];
   gmp: IPOItem[];
+  fetchedAt?: number;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -53,18 +53,37 @@ function GainLoss({ value }: { value: string | null }) {
   );
 }
 
+function lastUpdatedLabel(ts: number | null): string {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Updated just now";
+  if (mins < 60) return `Updated ${mins}m ago`;
+  return `Updated ${Math.floor(mins / 60)}h ago`;
+}
+
 export default function IPOPage() {
   const [tab, setTab] = useState("upcoming");
   const [data, setData] = useState<IPOData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/ipo")
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const res = await fetch("/api/ipo");
+      const d = await res.json();
+      setData(d);
+    } catch {
+      setData({ upcoming: [], recent: [], gmp: [] });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (
@@ -84,15 +103,30 @@ export default function IPOPage() {
       <Header title="IPO Tracker" />
       <div className="p-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="upcoming">Upcoming & Open</TabsTrigger>
-            <TabsTrigger value="recent">Recent Listings</TabsTrigger>
-            <TabsTrigger value="gmp">GMP Tracker</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-3">
+            <TabsList>
+              <TabsTrigger value="upcoming">Upcoming & Open</TabsTrigger>
+              <TabsTrigger value="recent">Recent Listings</TabsTrigger>
+              <TabsTrigger value="gmp">GMP Tracker</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-3">
+              {data?.fetchedAt && (
+                <span className="text-xs text-muted-foreground">{lastUpdatedLabel(data.fetchedAt)}</span>
+              )}
+              <button
+                onClick={() => load(true)}
+                disabled={refreshing}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
+          </div>
 
           {/* Upcoming & Open IPOs */}
           <TabsContent value="upcoming">
-            <Card className="mt-4">
+            <Card className="mt-2">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Rocket className="h-4 w-4" />
@@ -101,7 +135,7 @@ export default function IPOPage() {
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 {!data?.upcoming?.length ? (
-                  <p className="p-6 text-sm text-muted-foreground text-center">No upcoming IPOs found.</p>
+                  <p className="p-6 text-sm text-muted-foreground text-center">No upcoming IPO data found. Data is sourced from Chittorgarh — it may be temporarily unavailable.</p>
                 ) : (
                   <table className="w-full min-w-[700px]">
                     <thead>
@@ -136,13 +170,13 @@ export default function IPOPage() {
 
           {/* Recent Listings */}
           <TabsContent value="recent">
-            <Card className="mt-4">
+            <Card className="mt-2">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Recent IPO Listings</CardTitle>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 {!data?.recent?.length ? (
-                  <p className="p-6 text-sm text-muted-foreground text-center">No recent listings found.</p>
+                  <p className="p-6 text-sm text-muted-foreground text-center">No recent listing data found.</p>
                 ) : (
                   <table className="w-full min-w-[600px]">
                     <thead>
@@ -163,7 +197,7 @@ export default function IPOPage() {
                           <td className="py-2.5 px-3 text-sm text-right font-mono">
                             {ipo.listingPrice != null ? `₹${ipo.listingPrice}` : "—"}
                           </td>
-                          <td className="py-2.5 px-3 text-sm text-right font-mono">
+                          <td className="py-2.5 px-3 text-sm text-right">
                             <GainLoss value={ipo.listingGain} />
                           </td>
                         </tr>
@@ -177,7 +211,7 @@ export default function IPOPage() {
 
           {/* GMP Tracker */}
           <TabsContent value="gmp">
-            <Card className="mt-4">
+            <Card className="mt-2">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Grey Market Premium (GMP)</CardTitle>
               </CardHeader>
