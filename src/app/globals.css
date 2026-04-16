@@ -3,41 +3,47 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: #f8f9fb;
-  --color-foreground: #1a1a2e;
+  /* Girly pop Bloomberg: cream + hot pink + lavender */
+  --color-background: #fef6f9;
+  --color-foreground: #2d1b3d;
   --color-card: #ffffff;
-  --color-card-foreground: #1a1a2e;
+  --color-card-foreground: #2d1b3d;
   --color-popover: #ffffff;
-  --color-popover-foreground: #1a1a2e;
-  --color-primary: #4361ee;
+  --color-popover-foreground: #2d1b3d;
+  --color-primary: #ec4899;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f1f3f9;
-  --color-secondary-foreground: #3a3a5c;
-  --color-muted: #f1f3f9;
-  --color-muted-foreground: #7c7c9a;
-  --color-accent: #eef0f7;
-  --color-accent-foreground: #3a3a5c;
-  --color-destructive: #e63946;
+  --color-secondary: #fce7f3;
+  --color-secondary-foreground: #831843;
+  --color-muted: #fdf2f8;
+  --color-muted-foreground: #9d6b8a;
+  --color-accent: #f5d0fe;
+  --color-accent-foreground: #701a75;
+  --color-destructive: #f43f5e;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e5e7ef;
-  --color-input: #e5e7ef;
-  --color-ring: #4361ee;
-  --color-chart-1: #4361ee;
-  --color-chart-2: #2ec4b6;
-  --color-chart-3: #7b61ff;
-  --color-chart-4: #ff9f1c;
-  --color-chart-5: #e63946;
-  --color-sidebar: #ffffff;
-  --color-sidebar-foreground: #3a3a5c;
-  --color-sidebar-accent: #f1f3f9;
-  --color-sidebar-accent-foreground: #1a1a2e;
-  --color-sidebar-border: #eef0f7;
+  --color-border: #fbcfe8;
+  --color-input: #fbcfe8;
+  --color-ring: #ec4899;
+  --color-chart-1: #ec4899;
+  --color-chart-2: #a78bfa;
+  --color-chart-3: #22d3ee;
+  --color-chart-4: #fb923c;
+  --color-chart-5: #f43f5e;
+  --color-sidebar: #fff0f6;
+  --color-sidebar-foreground: #4a1e3f;
+  --color-sidebar-accent: #fce7f3;
+  --color-sidebar-accent-foreground: #831843;
+  --color-sidebar-border: #fbcfe8;
+  /* Terminal-like semantic colors */
+  --color-bull: #10b981;
+  --color-bear: #f43f5e;
+  --color-ticker-bg: #831843;
+  --color-ticker-fg: #fce7f3;
   --radius-sm: 0.5rem;
   --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
 html {
@@ -45,29 +51,86 @@ html {
 }
 
 body {
-  background: #f8f9fb;
-  color: #1a1a2e;
+  background: linear-gradient(180deg, #fef6f9 0%, #fdf2f8 100%);
+  background-attachment: fixed;
+  color: #2d1b3d;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 * {
-  border-color: #e5e7ef;
+  border-color: #fbcfe8;
 }
 
-/* Scrollbar styling */
+/* Sparkle cursor effect for fun — subtle */
+::selection {
+  background: #ec4899;
+  color: #ffffff;
+}
+
+/* Scrollbar styling — hot pink */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #fdf2f8;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5e0;
+  background: #f9a8d4;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b0b5c4;
+  background: #ec4899;
+}
+
+/* Terminal ticker scrolling animation */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-scroll {
+  animation: ticker-scroll 90s linear infinite;
+}
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* Shimmer for loading — pink tinted */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #fce7f3 0%, #fbcfe8 50%, #fce7f3 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Gradient text for fun titles */
+.gradient-text {
+  background: linear-gradient(135deg, #ec4899 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Sparkle decoration */
+.sparkle::after {
+  content: "✦";
+  margin-left: 0.25rem;
+  color: #ec4899;
+  font-size: 0.75em;
+}
+
+/* Blink for live indicator */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.blink {
+  animation: blink 1.5s ease-in-out infinite;
 }

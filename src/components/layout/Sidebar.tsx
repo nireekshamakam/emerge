@@ -13,6 +13,7 @@ import {
   Kanban,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -35,19 +36,22 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-200",
+        "fixed left-0 top-8 z-40 h-[calc(100vh-2rem)] bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-200 shadow-[2px_0_12px_rgba(236,72,153,0.08)]",
         collapsed ? "w-16" : "w-56"
       )}
     >
       <div className="flex items-center justify-between h-14 px-4 border-b border-sidebar-border">
         {!collapsed && (
-          <h1 className="text-lg font-bold text-sidebar-foreground tracking-tight">
-            Emerge
-          </h1>
+          <Link href="/" className="flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-pink-500" />
+            <h1 className="text-lg font-bold gradient-text tracking-tight">
+              Emerge
+            </h1>
+          </Link>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded-md hover:bg-sidebar-accent text-sidebar-foreground cursor-pointer"
+          className="p-1 rounded-md hover:bg-pink-100 text-pink-600 cursor-pointer transition-colors"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
@@ -61,10 +65,10 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  ? "bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white shadow-sm shadow-pink-300/50"
+                  : "text-sidebar-foreground/70 hover:bg-pink-100/80 hover:text-pink-700"
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
@@ -76,7 +80,9 @@ export function Sidebar() {
 
       <div className="border-t border-sidebar-border p-4">
         {!collapsed && (
-          <p className="text-xs text-sidebar-foreground/50">Investment Analyst</p>
+          <p className="text-[10px] text-sidebar-foreground/60 tracking-wider uppercase">
+            ♡ it girl terminal
+          </p>
         )}
       </div>
     </aside>
